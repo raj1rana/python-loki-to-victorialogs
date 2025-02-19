@@ -39,8 +39,8 @@ class VictoriaClient:
             if not all([parsed.scheme, parsed.netloc]):
                 raise ValueError(f"Invalid Victoria Logs URL format: {self.base_url}")
 
-            # Test connection with correct Victoria Logs health endpoint
-            self._make_request('/health', method='get', validate_only=True)
+            # Test connection with Victoria Metrics health endpoint
+            self._make_request('/api/v1/status/health', method='get', validate_only=True)
             logger.info(f"Victoria Logs URL validated and accessible: {self.base_url}")
         except Exception as e:
             logger.error(f"Victoria Logs URL validation failed: {str(e)}")
@@ -100,7 +100,7 @@ class VictoriaClient:
     def test_connection(self) -> bool:
         """Test connection to Victoria Logs"""
         try:
-            self._make_request('/health', method='get')
+            self._make_request('/api/v1/status/health', method='get')
             logger.info("Successfully connected to Victoria Logs")
             return True
         except Exception as e:
@@ -137,7 +137,7 @@ class VictoriaClient:
 
         try:
             self._make_request(
-                endpoint='/execute',
+                endpoint='/api/v1/sql',
                 data=schema.encode('utf-8')
             )
             logger.info("Victoria Logs schema created successfully")
@@ -149,8 +149,8 @@ class VictoriaClient:
         """Insert a log entry into Victoria Logs"""
         try:
             self._make_request(
-                endpoint='/write',  # Use Victoria's native write endpoint
-                params={"query": "INSERT INTO audit_logs FORMAT JSONEachRow"},
+                endpoint='/api/v1/write',  # Use Victoria Metrics write endpoint
+                params={"db": "default"},  # Specify database
                 json=log_data
             )
             logger.debug(f"Successfully inserted log with event_record_id: {log_data.get('event_record_id')}")
