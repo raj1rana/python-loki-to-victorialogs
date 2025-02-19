@@ -17,12 +17,13 @@ class Settings(BaseSettings):
     REQUEST_TIMEOUT: int = 30  # seconds
 
     # Query settings
-    LOKI_QUERY: str = '{topic="iaas-database-auditlogs"}'
+    LOKI_QUERY: str = '{topic="iaas-database-auditlogs"}'  # Verified Loki LogQL query format
     START_TIME: datetime = datetime.now() - timedelta(hours=1)
     END_TIME: datetime = datetime.now()
 
     class Config:
         env_file = ".env"
         case_sensitive = True
+        env_prefix = ""  # No prefix for environment variables
 
 settings = Settings()

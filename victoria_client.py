@@ -39,18 +39,20 @@ class VictoriaClient:
             if not all([parsed.scheme, parsed.netloc]):
                 raise ValueError(f"Invalid Victoria Logs URL format: {self.base_url}")
 
-            # Test basic connectivity
-            self._make_request('health', method='get', validate_only=True)
+            # Test connection with correct Victoria Logs health endpoint
+            self._make_request('/health', method='get', validate_only=True)
             logger.info(f"Victoria Logs URL validated and accessible: {self.base_url}")
         except Exception as e:
             logger.error(f"Victoria Logs URL validation failed: {str(e)}")
             raise
 
     def _make_request(self, endpoint: str, method: str = "post", data: Any = None, 
-                     params: Dict = None, json: Dict = None, retry_count: int = 0,
+                     params: Dict[str, Any] = None, json: Dict[str, Any] = None,
                      validate_only: bool = False) -> requests.Response:
         """Make HTTP request to Victoria Logs with retries and detailed logging"""
-        url = f"{self.base_url}/{endpoint.lstrip('/')}"
+        # Ensure endpoint starts with / and clean any double slashes
+        endpoint = '/' + endpoint.lstrip('/')
+        url = urllib.parse.urljoin(self.base_url, endpoint)
 
         try:
             logger.debug(f"Making {method.upper()} request to: {url}")
@@ -98,7 +100,7 @@ class VictoriaClient:
     def test_connection(self) -> bool:
         """Test connection to Victoria Logs"""
         try:
-            self._make_request('health', method='get')
+            self._make_request('/health', method='get')
             logger.info("Successfully connected to Victoria Logs")
             return True
         except Exception as e:
@@ -135,7 +137,7 @@ class VictoriaClient:
 
         try:
             self._make_request(
-                endpoint="execute",
+                endpoint='/execute',
                 data=schema.encode('utf-8')
             )
             logger.info("Victoria Logs schema created successfully")
@@ -145,12 +147,10 @@ class VictoriaClient:
 
     def insert_log(self, log_data: Dict[str, Any]):
         """Insert a log entry into Victoria Logs"""
-        query = "INSERT INTO audit_logs FORMAT JSONEachRow"
-
         try:
             self._make_request(
-                endpoint="execute",
-                params={"query": query},
+                endpoint='/write',  # Use Victoria's native write endpoint
+                params={"query": "INSERT INTO audit_logs FORMAT JSONEachRow"},
                 json=log_data
             )
             logger.debug(f"Successfully inserted log with event_record_id: {log_data.get('event_record_id')}")
